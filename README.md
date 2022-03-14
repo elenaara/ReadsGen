@@ -1,12 +1,12 @@
 # README - In silico read generator
 
-Includes two scripts, ReadGen.py and align_seq.py.
+Includes two scripts, ReadsGen.py and ReadsAlign.py.
 
-- **ReadGen.py** takes a reference DNA sequence in fasta format and generates
+- **ReadsGen.py** takes a reference DNA sequence in fasta format and generates
 randomly produced reads in a FASTQ format. The program can generate single-end
 or paired-end reads.
 
-- **align_seq.py** aligns the generated reads to a reference sequence.
+- **ReadsAlign.py** aligns the generated reads to a reference sequence.
 
 ## Installation
 The scripts are written in python, and use the numpy package.
@@ -22,12 +22,13 @@ The scripts are run through the command line.
  ```
 
  Flag options:
-   -h, --help:           show help message and exit
-   -i:           Input reference sequence in fasta format. Reads will be generated from this sequence.
-   --length:     Length of the reads to be generated. Default is 100.
-   --coverage:  Sequencing depth or coverage. Default is 10.
-   --pair-end:       Generate paired-end reads. If this argument is not included, reads will be single-end.
-   -o:               Basename for output files. Default is 'reads' for single-end, 'reads_1' and 'reads_2' for paired-end.
+   - -h, --help:           show help message and exit
+   - -i:           Input reference sequence in fasta format. Reads will be generated from this sequence.
+   - --length:     Length of the reads to be generated. Default is 100.
+   - --coverage:  Sequencing depth or coverage. Default is 10.
+   - --pair-end:       Generate paired-end reads. If this argument is not included, reads will be single-end.
+   - --mut MUT:            Randomly mutate the specified number of positions
+   - -o:               Basename for output files. Default is 'reads' for single-end, 'reads_1' and 'reads_2' for paired-end.
 
  Example usage:
 ```
@@ -42,7 +43,7 @@ The outputs are FASTQ files; for the single-end reads one file is generated and
 for paired-end each group of reads is printed to a different file, so 2 output
 files numbered 1 and 2 are generated.
 
-## Aligner - align_seq.py
+## Aligner - ReadsAlign.py
 This script splits the reads into k-mers and searches for their position in
 the reference sequence, then reconstructs the sequence from the found positions.
 Once a kmer matches the sequence, the rest of the read is compared so there
@@ -52,20 +53,20 @@ for the read to be aligned.
 ### Usage
 
  ```
- align_reads.py [-h] -ref REF_SEQ [-i READS] [-p1 READS1] [-p2 READS2] [-o OUT] [-o OUT]
+ python ReadsAlign.py [-h] -ref REF_SEQ [-i READS] [-p1 READS1] [-p2 READS2] [-o OUT] [-o OUT]
  ```
  optional arguments:
-   -h, --help:   show help message and exit
-   -ref:  Input reference sequence in fasta format
-   -i:      Input reads in FASTQ format. 1 file, for single-end reads.
-   -p1:    FASTQ file 1 for paired end reads
-   -p2:   FASTQ file 2 for paired end reads
-   --k: Length of the k-mers
-   -o:        Basename for assembly file. Default is 'assembly'
+   - -h, --help:   show help message and exit
+   - -ref:  Input reference sequence in fasta format
+   - -i:      Input reads in FASTQ format. 1 file, for single-end reads.
+   - -p1:    FASTQ file 1 for paired end reads
+   - -p2:   FASTQ file 2 for paired end reads
+   - --k: Length of the k-mers
+   - -o:        Basename for assembly file. Default is 'assembly'
 
  Example usage:
 ```
- python align_reads.py -ref rCRS.fa -p1 reads1.fastq -p2 reads2.fastq
+ python ReadsAlign.py -ref rCRS.fa -p1 reads1.fastq -p2 reads2.fastq
  ```
 This command takes two files containing paired-end reads and will align them
 to the reference sequence.

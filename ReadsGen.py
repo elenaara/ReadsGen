@@ -150,11 +150,39 @@ def rev_comp(sequence):
         Returns reverse complement of the sequence (ACs are turned into TGs and viceversa, and the sequence is backwards).
 
     """
-    reverse = {'A':'T','a':'t','T':'A','t':'a','C':'G','c':'g','G':'C','g':'c'}
+    reverse = {'A':'T','T':'A','C':'G','G':'C','N':'N'}
     reverse_seq = ''
-    for i in sequence:
+    for i in sequence.upper():
         reverse_seq = reverse_seq + reverse[i]
     return reverse_seq[::-1]
+
+def mutate(position, sequence):
+    """
+    Function to randomly mutate a desired position of a DNA sequence.
+    All possible nucleotides have the same probability.
+
+    Parameters
+    ----------
+    sequence: str
+        Sequence to mutate.
+        
+    position : int
+        Position in the sequence to mutate.
+    
+    Returns
+    -------
+    mut_seq: str
+        Mutated sequence.
+
+    """
+    Nts = ['A','C','T','G']
+    new = random.choice(Nts)
+    old = sequence[position] 
+    while new == old: # If the chosen nucleotide is the same as the old one
+    # Generate another one until they are different
+        new = random.choice(Nts)
+    mut_seq = seq[0:position] + new + seq[position+1:]
+    return(mut_seq)
 
 def qscore(error):
     """
@@ -222,6 +250,15 @@ parser.add_argument(                                                  # quality
     help = 'Generate different qualities. By default all positions show a quality of I (Q40)'
     )
 
+parser.add_argument(                                                  # quality
+    '--mut',
+    type= int,
+    dest = 'mut',
+    required = False,
+    default = 0,
+    help = 'Randomly mutate the specified number of positions'
+    )
+
 parser.add_argument(                                                  # output 
     '-o',
     type = str,
@@ -240,12 +277,16 @@ args = parser.parse_args()
 
 # Reference seq
 fasta = fasta1line(args.refseq)
-# headers
-headers = [] # Header List
+# Get header and seq
 for key in fasta:
     header = key[1:]
-    headers.append(header)
+    seq = fasta[key]
 
+# Mutate reference sequence if specified
+if args.mut > 0:
+    mut_positions = [int(random.uniform(0,len(seq))) for i in range(args.mut)]
+    for pos in mut_positions:
+        seq = mutate(pos,seq)
 
 # %% Generate reads
 
@@ -258,27 +299,25 @@ paired = args.paired
 # %% SINGLE END READS
 # Split reference seq 
 if args.paired == False:
-    for key in fasta: # for each ref sequence
-        reads = [] # list for generated reads
-        count = 0 # counter for the number of times the sequence is "read", as many as desired coverage
-        seq = fasta[key] # get sequence
-        while count <= coverage:    
-            
-            # Number of reads
-            Nreads = int(len(seq)/readlen)
-            # Generate splitting positions
-            #positions = np.random.randint(0,len(seq),Nreads)
-            positions = [int(random.uniform(0,len(seq))) for i in range(Nreads)]
-            #positions.append(0,len(seq))
-            
-            for i in positions: # Start reading in each of the positions
-            # Read from position i until reaching read length
-                read = [seq[i:j] for j in range(i, len(seq) + 1) if len(seq[i:j]) == readlen]
-                # Add current read to the reads list
-                reads += read 
+    reads = [] # list for generated reads
+    count = 0 # counter for the number of times the sequence is "read", as many as desired coverage
+    while count <= coverage:    
+        
+        # Number of reads
+        Nreads = int(len(seq)/readlen)
+        # Generate splitting positions
+        #positions = np.random.randint(0,len(seq),Nreads)
+        positions = [int(random.uniform(0,len(seq))) for i in range(Nreads)]
+        #positions.append(0,len(seq))
+        
+        for i in positions: # Start reading in each of the positions
+        # Read from position i until reaching read length
+            read = [seq[i:j] for j in range(i, len(seq) + 1) if len(seq[i:j]) == readlen]
+            # Add current read to the reads list
+            reads += read 
                 
                 
-            count += 1 # add counter
+        count += 1 # add counter
 
 # Quality line
     if args.q:
@@ -325,86 +364,87 @@ if args.paired == False:
 
 # %% PAIRED END READS
 if args.paired:
-    for key in fasta: # for each ref sequence
      # lists for generated reads
-        reads1 = []
-        reads2 = []
-        count = 0 # counter for the number of times the sequence is "read", as many as desired coverage
-        seq = fasta[key] # get sequence
-        while count <= coverage:    
+     reads1 = []
+     reads2 = []
+     count = 0 # counter for the number of times the sequence is "read", as many as desired coverage
+     while count <= coverage:    
+         
+         # Number of reads
+         Nreads = int(len(seq)/(2*readlen))
+         # Generate splitting positions
+         #positions = np.random.randint(0,len(seq),Nreads)
+         positions = [int(random.uniform(0,len(seq))) for i in range(Nreads)]
+         
+         for i in positions: # Start reading in each of the positions
+         # Read from position i until reaching read length
+             read1 = [seq[i:j] for j in range(i, len(seq) + 1) if len(seq[i:j]) == readlen]
+             # Move for paired-end read
+             i2 = i + 10
+             read2 = [seq[i2:j] for j in range(i2,len(seq) + 1) if len(seq[i2:j]) == readlen]
+             if read2:
+                 read2_rev = rev_comp(read2[0])
+                 reads2.append(read2_rev)
+             # Add current read to the reads list
+             reads1 += read1
             
-            # Number of reads
-            Nreads = int(len(seq)/(2*readlen))
-            # Generate splitting positions
-            #positions = np.random.randint(0,len(seq),Nreads)
-            positions = [int(random.uniform(0,len(seq))) for i in range(Nreads)]
-            
-            for i in positions: # Start reading in each of the positions
-            # Read from position i until reaching read length
-                read1 = [seq[i:j] for j in range(i, len(seq) + 1) if len(seq[i:j]) == readlen]
-                # Move for paired-end read
-                i2 = i + 10
-                read2 = [seq[i2:j] for j in range(i2,len(seq) + 1) if len(seq[i:j]) == readlen]
-                # Add current read to the reads list
-                reads1 += read1
-                reads2 += read2
                 
-            count += 1 # add counter
+         count += 1 # add counter
 
-    # Quality line
-    if args.q:
-        # For reads1
-        qualities1 = []
-        for read in reads1:       
-            quality_values = 0.9*readlen 
-            # Median error = 0.1026% -> 0.0010
-            randQ = random.uniform(0.0004,0.001)
-            error_rates1 = np.random.uniform(0.0001,randQ,size=int(quality_values)) 
-            #statistics.median(error_rates1)
-            error_rates2 = np.random.uniform(randQ,0.0015,size=int(readlen - quality_values))
-            #statistics.median(error_rates2)
-            error_ascii1 = ''
-            error_ascii2 = ''
-            #  Q = -10log10(e)
-            # 
-            for i in error_rates1:
-                Q = qscore(i)
-                error_ascii1 += Q
-            for i in error_rates2:
-                Q = qscore(i)
-                error_ascii2 += Q
-            qual = error_ascii1 + error_ascii2
-            qualities1.append(qual)
+     # Quality line
+     if args.q:
+         # For reads1
+         qualities1 = []
+         for read in reads1:       
+             quality_values = 0.9*readlen 
+             
+             randQ = random.uniform(0.0004,0.001)
+             error_rates1 = np.random.uniform(0.0001,randQ,size=int(quality_values)) 
+             
+             error_rates2 = np.random.uniform(randQ,0.0015,size=int(readlen - quality_values))
+             
+             error_ascii1 = ''
+             error_ascii2 = ''
+        
+             for i in error_rates1:
+                 Q = qscore(i)
+                 error_ascii1 += Q
+             for i in error_rates2:
+                 Q = qscore(i)
+                 error_ascii2 += Q
+             qual = error_ascii1 + error_ascii2
+             qualities1.append(qual)
     
         # For reads2
-        qualities2 = []
-        for read in reads2:       
-            quality_values = 0.9*readlen 
-            # Median error = 0.1026% -> 0.0010
-            randQ = random.uniform(0.0004,0.001)
-            error_rates1 = np.random.uniform(0.0001,randQ,size=int(quality_values)) 
-            #statistics.median(error_rates1)
-            error_rates2 = np.random.uniform(randQ,0.0015,size=int(readlen - quality_values))
-            #statistics.median(error_rates2)
-            error_ascii1 = ''
-            error_ascii2 = ''
-            #  Q = -10log10(e)
-            # 
-            for i in error_rates1:
-                Q = qscore(i)
-                error_ascii1 += Q
-            for i in error_rates2:
-                Q = qscore(i)
-                error_ascii2 += Q
-            qual = error_ascii1 + error_ascii2
-            qualities2.append(qual)
-    else:
-        qualities1 = []
-        qualities2 = []
-        qual = readlen*'I'
-        for i in range(len(reads)):
-            qualities1.append(qual)
-            qualities2.append(qual)
+         qualities2 = []
+         for read in reads2:       
+             quality_values = 0.9*readlen 
+             
+             randQ = random.uniform(0.0004,0.001)
+             error_rates1 = np.random.uniform(0.0001,randQ,size=int(quality_values)) 
+             
+             error_rates2 = np.random.uniform(randQ,0.0015,size=int(readlen - quality_values))
+             
+             error_ascii1 = ''
+             error_ascii2 = ''
+             
+             # 
+             for i in error_rates1:
+                 Q = qscore(i)
+                 error_ascii1 += Q
+             for i in error_rates2:
+                 Q = qscore(i)
+                 error_ascii2 += Q
+             qual = error_ascii1 + error_ascii2
+             qualities2.append(qual)
+     else:
+         qualities1 = []
+         qualities2 = []
+         qual = readlen*'I'
+         for i in range(len(reads1)):
+             qualities1.append(qual)
+             qualities2.append(qual)
+             
 # Print FASTQ
 
 # print header, seq, spacer, quality line
@@ -412,24 +452,24 @@ if args.paired:
 
     # READS 1
     # Output file
-    output1 = args.out + '_1.fastq'
-    with open(output1, 'w') as out1:
-        for i in range(0,len(reads1)):
-            numseq = i + 1
-            print('@' + str(numseq) + '_1\t' + header, file = out1) # header
-            print(reads1[i], file = out1) # read sequence
-            print('+', file = out1) # spacer line
-            print(qualities1[i], file = out1) # quality line
-        
+     output1 = args.out + '_1.fastq'
+     with open(output1, 'w') as out1:
+         for i in range(0,len(reads1)):
+             numseq = i + 1
+             print('@' + str(numseq) + '_1\t' + header, file = out1) # header
+             print(reads1[i], file = out1) # read sequence
+             print('+', file = out1) # spacer line
+             print(qualities1[i], file = out1) # quality line
+         
     # READS 2
     # Output file 
-    output2 = args.out + '_2.fastq'
-    with open(output2, 'w') as out2:
-        for i in range(0,len(reads2)):
-            numseq = i + 1
-            print('@' + str(numseq) + '_2\t' + header, file = out2) # header
-            print(reads2[i], file = out2) # read sequence
-            print('+', file = out2) # spacer line
-            print(qualities2[i], file = out2) # quality line
+     output2 = args.out + '_2.fastq'
+     with open(output2, 'w') as out2:
+         for i in range(0,len(reads2)):
+             numseq = i + 1
+             print('@' + str(numseq) + '_2\t' + header, file = out2) # header
+             print(reads2[i], file = out2) # read sequence
+             print('+', file = out2) # spacer line
+             print(qualities2[i], file = out2) # quality line
 
 
