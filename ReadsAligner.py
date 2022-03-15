@@ -401,26 +401,30 @@ for i in range(len(ref_seq)): # For each position fo the reference sequence
         sequence += read_index[i][position]
     else: # No reads mapped to this position
         if not sequence: # If it is the first position
-            sequence += 'N'
-        elif sequence.count('N') == len(sequence): # First positions
-            sequence += 'N'
+            sequence += '-'
+        elif sequence.count('-') == len(sequence): # First positions
+            sequence += '-'
         elif position >= readlen - 1: # If we have aligned all nts from last read
-            sequence += 'N'
+            sequence += '-'
         else: # If we have a previous reads that maps here
             position += 1
             sequence += read_index[index][position]
 
 # Output files
+
 # First file it's whole sequence with the unknown nts (N)
 out1=open(args.out + '.fa', 'w')
-N = sequence.count('N')
+N = sequence.count('-')
+# Show mising positions as 'N'
+trans = sequence.maketrans('-','N') 
+assembly = sequence.translate(trans)
 print('>assembly\t'+ 'L:' + str(len(sequence)) + '\tN:' + str(N) + '\tref:' + ref_header,file=out1)
-print(sequence,file=out1)
+print(assembly,file=out1)
 
 # Second file, contigs
 out2 = open(args.out+'_contigs.fa', 'w')
 numseq = 1
-for fragment in re.split('N+',sequence):
+for fragment in re.split('-+',sequence):
     if fragment:
         print('>contig_'+ str(numseq) + '\tL:' + str(len(fragment)),file=out2)
         print(fragment,file=out2)
@@ -428,7 +432,8 @@ for fragment in re.split('N+',sequence):
 
 # Calculate percentage identity between generated sequence and ref
 if args.identity:
-    per_i = identity(sequence,ref_seq,0,len(ref_seq)-1)
+    per_i = identity(assembly,ref_seq,0,len(ref_seq))
     per_map = map_reads*100/len(fastq_dict)
     print('Percentage identity: {0:.2f}%'.format(per_i))
     print('Mapped reads: {0:.2f}%'.format(per_map))
+
