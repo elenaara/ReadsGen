@@ -27,7 +27,8 @@ The scripts are run through the command line.
    - --length:     Length of the reads to be generated. Default is 100.
    - --coverage:  Sequencing depth or coverage. Default is 10.
    - --pair-end:       Generate paired-end reads. If this argument is not included, reads will be single-end.
-   - --mut MUT:            Randomly mutate the specified number of positions
+   - --mut:            Randomly mutate the specified number of positions.
+   - --q:              Generate different qualities. By default all positions show a quality of I (Q40).
    - -o:               Basename for output files. Default is 'reads' for single-end, 'reads_1' and 'reads_2' for paired-end.
 
  Example usage:
