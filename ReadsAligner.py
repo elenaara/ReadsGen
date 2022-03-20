@@ -422,10 +422,12 @@ print('>assembly\t'+ 'L:' + str(len(sequence)) + '\tN:' + str(N) + '\tref:' + re
 print(assembly,file=out1)
 
 # Second file, contigs
+assemb_length = 0 # variable to calculate percentage of the reconstructed sequence
 out2 = open(args.out+'_contigs.fa', 'w')
 numseq = 1
 for fragment in re.split('-+',sequence):
     if fragment:
+        assemb_length += len(fragment)
         print('>contig_'+ str(numseq) + '\tL:' + str(len(fragment)),file=out2)
         print(fragment,file=out2)
         numseq += 1
@@ -434,6 +436,8 @@ for fragment in re.split('-+',sequence):
 if args.identity:
     per_i = identity(assembly,ref_seq,0,len(ref_seq))
     per_map = map_reads*100/len(fastq_dict)
+    per_seq = assemb_length*100/len(ref_seq)
     print('Percentage identity: {0:.2f}%'.format(per_i))
     print('Mapped reads: {0:.2f}%'.format(per_map))
+    print('Reconstructed sequence: {0:.2f}%'.format(per_seq))
 

@@ -84,3 +84,7 @@ without missing positions between them.
 
 Also a percentage identity between the generated sequence and the can be printed to the screen if it specified in the
 command.
+
+
+The "test_files" folder includes the reference sequence used for testing and
+an example of the output files for a read length of 100 and coverage of 10.
